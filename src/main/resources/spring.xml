@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--1、组件扫描-->
+    <context:component-scan base-package="com.atguigu.finance">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"></context:exclude-filter>
+    </context:component-scan>
+    <!--2、数据源-->
+    <context:property-placeholder location="classpath:db.properties"/>
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"></property>
+        <property name="url" value="${jdbc.url}"></property>
+        <property name="username" value="${jdbc.username}"></property>
+        <property name="password" value="${jdbc.password}"></property>
+    </bean>
+    <!--3、事务管理-->
+    <bean id="dataSourceTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+    <!-- 基于注解使用事务管理 -->
+    <tx:annotation-driven transaction-manager="dataSourceTransactionManager"/>
+    <!-- 4. 整合Mybatis  -->
+    <!--
+        解决SqlSession对象的创建及管理
+            Mybatis:  mybatis-config.xml(mapper映射文件)==>SqlSessionFactory==>openSession();
+            Spring :  SqlSessionFactoryBean ==>getObject()
+    -->
+    <bean class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!--  注入Mybatis的全局配置文件 -->
+        <property name="configLocation" value="classpath:mybatisConfig.xml"></property>
+        <!--  注入SQL映射文件 -->
+        <!--<property name="mapperLocations" value="classpath:/mapper/*.xml"></property>-->
+        <!--  注入数据源 -->
+        <property name="dataSource" ref="dataSource"></property>
+        <!--  别名处理 -->
+        <property name="typeAliasesPackage" value="com.atguigu.ssm.beans"></property>
+
+        <!--  插件 -->
+        <!-- <property name="plugins">
+            <array>
+                <bean class="com.github.pagehelper.PageInterceptor"></bean>
+            </array>
+        </property> -->
+    </bean>
+
+    <!--
+         解决Mapper接口代理实现类对象的创建及管理
+             Mybatis :  SqlSession.getMapper(xxxMapper.class);
+             Spring  :  MapperScannerConfigurer 扫描指定包下的Mapper接口，批量创建代理实现类对象，并让Spring进行管理.
+                        EmployeeMapper ==> 代理实现类对象在Spring容器中是一个Bean. bean的id是: employeeMapper
+    -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage"  value="com.atguigu.finance.mapper"></property>
+    </bean>
+
+    <!-- <mybatis-spring:scan base-package="com.atguigu.ssm.mapper"/> -->
+</beans>
